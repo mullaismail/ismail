@@ -1,0 +1,40 @@
+---
+- hosts: localhost
+  tasks:
+    - name: create Security Group
+      ec2_group:
+        name: ansible_sg
+        description: allow port 22
+        rules: 
+          - proto: tcp
+            from_port: 22
+            to_port: 22
+            cidr_ip: 0.0.0.0/0
+        region: eu-west-1
+        aws_access_key: AKIAIZRD6VMBS6HBOBHQ
+        aws_secret_key: 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
+    - name: Create keyPair
+      ec2_key:
+        name: ansible_key
+        aws_access_key: AKIAIZRD6VMBS6HBOBHQ
+        aws_secret_key: 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
+        region: eu-west-1
+        state: present
+        wait: yes
+      register: ansible_key_out
+    - name: copy the  keyPair
+      copy:
+        content: "{{ ansible_key_out.key.private_key }}"
+        dest: ./ansible.keyPair
+        mode: 0600
+      when: ansible_key_out.changed
+    - name: Launch ec2
+      ec2:
+        region: eu-west-1
+        image: ami-9cbe9be5
+        instance_type: t2.micro
+        aws_access_key: AKIAIZRD6VMBS6HBOBHQ
+        aws_secret_key: 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
+        count: 1
+        group: ansible_sg
+        key_name: ansible_key
